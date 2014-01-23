@@ -487,3 +487,10 @@ class TestJobsApi(test_utils.BaseTestCase):
         self.assertRaises(webob.exc.HTTPNotFound,
                           self.controller.update_status,
                           request, job_id, body)
+
+    def test_update_status_invalid_error_message(self):
+        request = unit_utils.get_fake_request(method='PUT')
+        body = {'status': {'status': 'ERROR', 'error_message': '*********'}}
+        self.assertRaises(webob.exc.HTTPBadRequest,
+                          self.controller.update_status,
+                          request, unit_utils.JOB_UUID1, body)

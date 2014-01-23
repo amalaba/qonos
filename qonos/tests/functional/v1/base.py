@@ -503,7 +503,7 @@ class TestApi(utils.BaseTestCase):
         self.assertEqual(updated_job['timeout'], timeout_str)
 
         # update status with error
-        error_message = 'ermagerd! errer!'
+        error_message = 'Errored out'
         self.client.update_job_status(job['id'], 'error',
                                       error_message=error_message)
         status = self.client.get_job(job['id'])['status']
@@ -524,7 +524,7 @@ class TestApi(utils.BaseTestCase):
         self.assertNotEqual(job_fault['id'], None)
 
         # cancel the job
-        error_message = 'ermagerd! cancelled!'
+        error_message = 'job cancelled'
         self.client.update_job_status(job['id'], 'CANCELLED',
                                       error_message=error_message)
         status = self.client.get_job(job['id'])['status']

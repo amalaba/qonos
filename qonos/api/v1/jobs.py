@@ -13,6 +13,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import re
 
 import webob.exc
 
@@ -168,9 +169,11 @@ class JobsController(object):
         except exception.NotFound:
             msg = _('Job %s could not be found.') % job_id
             raise webob.exc.HTTPNotFound(explanation=msg)
-
         if status['status'].upper() in ['ERROR', 'CANCELLED']:
             values = self._get_error_values(status, job)
+            if not re.search('^[a-zA-Z0-9_ ]+$', values['message']):
+                msg = _('Invalid Error Message for job %s') % job_id
+                raise webob.exc.HTTPBadRequest(explanation=msg)
             self.db_api.job_fault_create(values)
 
         return {'status': {'status': job['status'],

@@ -19,7 +19,7 @@
 SQLAlchemy models for qonos data
 """
 
-from sqlalchemy import Column, Integer, String, Index
+from sqlalchemy import Column, Integer, String, Index, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import ForeignKey, DateTime, Text
 from sqlalchemy.orm import relationship, backref, object_mapper
@@ -61,6 +61,11 @@ class ModelBase(object):
         session = session or db_api.get_session()
         session.delete(self)
         session.flush()
+
+    def soft_delete(self, session=None):
+        """Soft delete this object."""
+        self.deleted_at = timeutils.utcnow()
+        self.save(session=session)
 
     def update(self, values):
         """dict.update() behaviour."""
@@ -124,6 +129,14 @@ class ScheduleMetadata(BASE, ModelBase):
     parent = relationship(Schedule, backref=backref('schedule_metadata',
                                                     cascade='all,delete,'
                                                             'delete-orphan'))
+
+class ScheduleAudit(BASE, ModelBase):
+    """Represents metadata of a schedule in the datastore."""
+    __tablename__ = 'schedule_audit'
+
+    schedule_id = Column(String(36), nullable=False)
+    instance_id = Column(String(36), nullable=False)
+    deleted_at = Column(DateTime)
 
 
 class Worker(BASE, ModelBase):

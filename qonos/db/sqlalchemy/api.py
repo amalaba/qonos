@@ -1,4 +1,4 @@
-# vim: tabstop=4 shiftwidth=4 softtabstop=4
+﻿# vim: tabstop=4 shiftwidth=4 softtabstop=4
 
 #    Copyright 2013 Rackspace
 #
@@ -48,7 +48,7 @@ db_opts = [
     cfg.IntOpt('sql_max_retries', default=60),
     cfg.IntOpt('sql_retry_interval', default=1),
     cfg.BoolOpt('db_auto_create', default=True),
-]
+    ]
 
 CONF = cfg.CONF
 CONF.register_opts(db_opts)
@@ -162,7 +162,7 @@ def get_engine():
         engine_args = {'pool_recycle': CONF.sql_idle_timeout,
                        'echo': False,
                        'convert_unicode': True
-                       }
+        }
 
         try:
             _ENGINE = sqlalchemy.create_engine(sql_connection, **engine_args)
@@ -298,8 +298,8 @@ def paginate_query(query, model, sort_keys, limit=None, marker=None):
             v = getattr(marker, sort_key)
             marker_values.append(v)
 
-    # Note(nikhil): the underlying code only supports asc order of sort_dir
-    #at the moment. However, more than one sort_keys could be supplied.
+            # Note(nikhil): the underlying code only supports asc order of sort_dir
+            #at the moment. However, more than one sort_keys could be supplied.
         criteria_list = []
         for i in xrange(0, len(sort_keys)):
             crit_attrs = []
@@ -323,11 +323,11 @@ def paginate_query(query, model, sort_keys, limit=None, marker=None):
 @force_dict
 def schedule_get_all(filter_args={}):
     session = get_session()
-    query = session.query(models.Schedule)\
-                   .options(sa_orm.joinedload_all(
-                            models.Schedule.schedule_metadata))
+    query = session.query(models.Schedule) \
+        .options(sa_orm.joinedload_all(
+        models.Schedule.schedule_metadata))
     SCHEDULE_BASE_FILTERS = ['next_run_after', 'next_run_before', 'tenant',
-                    'limit', 'marker', 'action']
+                             'limit', 'marker', 'action']
 
     if 'next_run_after' in filter_args:
         query = query.filter(
@@ -340,16 +340,16 @@ def schedule_get_all(filter_args={}):
 
     if filter_args.get('tenant') is not None:
         query = query.filter(
-                models.Schedule.tenant == filter_args['tenant'])
+            models.Schedule.tenant == filter_args['tenant'])
 
     if filter_args.get('action') is not None:
         query = query.filter(
-                models.Schedule.action == filter_args['action'])
+            models.Schedule.action == filter_args['action'])
 
     for filter_key in filter_args.keys():
         if filter_key not in SCHEDULE_BASE_FILTERS:
             query = query.filter(models.Schedule.schedule_metadata.any(
-                        key=filter_key, value=filter_args[filter_key]))
+                key=filter_key, value=filter_args[filter_key]))
 
     marker_schedule = None
     if filter_args.get('marker') is not None:
@@ -365,10 +365,10 @@ def schedule_get_all(filter_args={}):
 def _schedule_get_by_id(schedule_id, session=None):
     session = session or get_session()
     try:
-        schedule = session.query(models.Schedule)\
-                          .options(sa_orm.joinedload_all('schedule_metadata'))\
-                          .filter_by(id=schedule_id)\
-                          .one()
+        schedule = session.query(models.Schedule) \
+            .options(sa_orm.joinedload_all('schedule_metadata')) \
+            .filter_by(id=schedule_id) \
+            .one()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -400,12 +400,12 @@ def schedule_update(schedule_id, schedule_values):
 def schedule_test_and_set_next_run(schedule_id, expected_next_run, next_run):
     session = get_session()
     if expected_next_run:
-        query = session.query(models.Schedule).filter_by(id=schedule_id)\
-                       .filter_by(next_run=expected_next_run)\
-                       .update(dict(next_run=next_run))
+        query = session.query(models.Schedule).filter_by(id=schedule_id) \
+            .filter_by(next_run=expected_next_run) \
+            .update(dict(next_run=next_run))
     else:
-        query = session.query(models.Schedule).filter_by(id=schedule_id)\
-                       .update(dict(next_run=next_run))
+        query = session.query(models.Schedule).filter_by(id=schedule_id) \
+            .update(dict(next_run=next_run))
 
     if not query:
         raise exception.NotFound()
@@ -433,9 +433,14 @@ def _schedule_metadata_update_in_place(schedule, metadata):
         schedule['schedule_metadata'].remove(meta)
 
 
-def schedule_delete(schedule_id):
+def schedule_delete(schedule_id,):
     session = get_session()
+    values = {}
     schedule_ref = _schedule_get_by_id(schedule_id, session)
+    meta_ref = _schedule_meta_get(schedule_id, key='instance_id', session=session)
+    values['schedule_id'] = schedule_id
+    values['instance_id'] = meta_ref['value']
+    _schedule_audit_create(values, session)
     schedule_ref.delete(session=session)
 
 
@@ -468,8 +473,8 @@ def schedule_meta_create(schedule_id, values):
 def schedule_meta_get_all(schedule_id):
     session = get_session()
     _schedule_get_by_id(schedule_id, session)
-    query = session.query(models.ScheduleMetadata)\
-                   .filter_by(schedule_id=schedule_id)
+    query = session.query(models.ScheduleMetadata) \
+        .filter_by(schedule_id=schedule_id)
 
     return query.all()
 
@@ -482,10 +487,10 @@ def _schedule_meta_get(schedule_id, key, session=None):
         msg = _('Schedule %s could not be found') % schedule_id
         raise exception.NotFound(message=msg)
     try:
-        meta = session.query(models.ScheduleMetadata)\
-                      .filter_by(schedule_id=schedule_id)\
-                      .filter_by(key=key)\
-                      .one()
+        meta = session.query(models.ScheduleMetadata) \
+            .filter_by(schedule_id=schedule_id) \
+            .filter_by(key=key) \
+            .one()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -606,8 +611,8 @@ def _filter_query_on_attributes(query, params, model, allowed_filters):
 @force_dict
 def job_get_all(params={}):
     session = get_session()
-    query = session.query(models.Job)\
-                   .options(sa_orm.subqueryload('job_metadata'))
+    query = session.query(models.Job) \
+        .options(sa_orm.subqueryload('job_metadata'))
     JOB_BASE_FILTERS = ['schedule_id',
                         'tenant',
                         'action',
@@ -634,10 +639,10 @@ def job_get_all(params={}):
 def _job_get_by_id(job_id, session=None):
     session = session or get_session()
     try:
-        job = session.query(models.Job)\
-                     .options(sa_orm.subqueryload('job_metadata'))\
-                     .filter_by(id=job_id)\
-                     .one()
+        job = session.query(models.Job) \
+            .options(sa_orm.subqueryload('job_metadata')) \
+            .filter_by(id=job_id) \
+            .one()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -669,10 +674,10 @@ def job_get_and_assign_next_by_action(action, worker_id, max_retry,
     # Make sure the job has not changed unexpectedly since
     # retrieving it
     try:
-        query = session.query(models.Job).filter_by(id=job_ref['id'])\
-                       .update({'worker_id': worker_id,
-                                'timeout': new_timeout,
-                                'retry_count': job_ref['retry_count'] + 1})
+        query = session.query(models.Job).filter_by(id=job_ref['id']) \
+            .update({'worker_id': worker_id,
+                     'timeout': new_timeout,
+                     'retry_count': job_ref['retry_count'] + 1})
     except sa_orm.exc.NoResultFound:
         #In case the job was deleted during assignment return nothing
         return None
@@ -687,16 +692,16 @@ def job_get_and_assign_next_by_action(action, worker_id, max_retry,
 
 
 def _job_get_next_by_action(session, now, action, max_retry):
-    job_ref = session.query(models.Job)\
-        .options(sa_orm.subqueryload('job_metadata'))\
-        .filter_by(action=action)\
-        .filter(models.Job.retry_count < max_retry)\
-        .filter(models.Job.hard_timeout > now)\
+    job_ref = session.query(models.Job) \
+        .options(sa_orm.subqueryload('job_metadata')) \
+        .filter_by(action=action) \
+        .filter(models.Job.retry_count < max_retry) \
+        .filter(models.Job.hard_timeout > now) \
         .filter(sa_sql.or_(~models.Job.status.in_(['DONE', 'CANCELLED']),
-                           models.Job.status == None))\
+                           models.Job.status == None)) \
         .filter(sa_sql.or_(models.Job.worker_id == None,
-                           models.Job.timeout <= now))\
-        .order_by(models.Job.updated_at.asc())\
+                           models.Job.timeout <= now)) \
+        .order_by(models.Job.updated_at.asc()) \
         .first()
     return job_ref
 
@@ -706,8 +711,8 @@ def _jobs_cleanup_hard_timed_out():
     and delete them, logging the timeout / failure as appropriate"""
     now = timeutils.utcnow()
     session = get_session()
-    num_del = session.query(models.Job)\
-        .filter(models.Job.hard_timeout <= now)\
+    num_del = session.query(models.Job) \
+        .filter(models.Job.hard_timeout <= now) \
         .delete()
     session.flush()
     return num_del
@@ -783,9 +788,9 @@ def job_meta_create(job_id, values):
 def _job_meta_get_by_id(meta_id):
     session = get_session()
     try:
-        meta = session.query(models.JobMetadata)\
-                      .filter_by(id=meta_id)\
-                      .one()
+        meta = session.query(models.JobMetadata) \
+            .filter_by(id=meta_id) \
+            .one()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -795,9 +800,9 @@ def _job_meta_get_by_id(meta_id):
 def _job_meta_get_all_by_job_id(job_id):
     session = get_session()
     try:
-        meta = session.query(models.JobMetadata)\
-                      .filter_by(job_id=job_id)\
-                      .all()
+        meta = session.query(models.JobMetadata) \
+            .filter_by(job_id=job_id) \
+            .all()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -807,10 +812,10 @@ def _job_meta_get_all_by_job_id(job_id):
 def _job_meta_get(job_id, key):
     session = get_session()
     try:
-        meta = session.query(models.JobMetadata)\
-                      .filter_by(job_id=job_id)\
-                      .filter_by(key=key)\
-                      .one()
+        meta = session.query(models.JobMetadata) \
+            .filter_by(job_id=job_id) \
+            .filter_by(key=key) \
+            .one()
     except sa_orm.exc.NoResultFound:
         raise exception.NotFound()
 
@@ -838,9 +843,9 @@ def job_metadata_update(job_id, values):
 def job_fault_latest_for_job_id(job_id):
     session = get_session()
     try:
-        job_fault = session.query(models.JobFault)\
-            .filter_by(job_id=job_id)\
-            .order_by(models.JobFault.created_at.desc())\
+        job_fault = session.query(models.JobFault) \
+            .filter_by(job_id=job_id) \
+            .order_by(models.JobFault.created_at.desc()) \
             .first()
         return job_fault
     except sa_orm.exc.NoResultFound:
@@ -856,3 +861,11 @@ def job_fault_create(values):
     job_fault_ref.save(session=session)
 
     return job_fault_ref
+
+
+def _schedule_audit_create(values, session):
+    schedule_audit_ref = models.ScheduleAudit()
+    schedule_audit_ref.update(values)
+    schedule_audit_ref.soft_delete(session=session)
+    schedule_audit_ref.save(session=session)
+
